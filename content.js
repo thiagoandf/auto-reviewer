@@ -40,8 +40,12 @@ function addReviewers(usernames) {
 
   function addNextReviewer() {
     if (index >= usernames.length) {
-      // Close the dropdown
-      document.body.click();
+      // Close the modal after adding the last reviewer
+      closeReviewerModal();
+
+      // Verify that all reviewers have been added
+      verifyReviewers(usernames);
+
       return;
     }
 
@@ -84,7 +88,14 @@ function addReviewers(usernames) {
       });
 
       if (foundOption) {
-        foundOption.click();
+        const inputElement = foundOption.querySelector('input[type="checkbox"]');
+        const isAlreadySelected = inputElement && inputElement.checked;
+
+        if (!isAlreadySelected) {
+          foundOption.click();
+        } else {
+          console.log(`Reviewer "${username}" is already selected.`);
+        }
         index++;
         setTimeout(addNextReviewer, 200); // Wait before adding the next reviewer
       } else {
@@ -92,8 +103,35 @@ function addReviewers(usernames) {
         index++;
         setTimeout(addNextReviewer, 200);
       }
-    }, 500); // Wait for the options to update after typing
+    }, 200); // Wait for the options to update after typing
   }
+}
+
+// Function to close the reviewer modal
+function closeReviewerModal() {
+  document.querySelector('.details-overlay[open]>summary').click()
+}
+
+// Function to verify that all reviewers have been added
+function verifyReviewers(usernames) {
+  setTimeout(() => {
+    // Selector for the reviewers list on the pull request page
+    const reviewerElements = document.querySelectorAll('.js-issue-sidebar-form .css-truncate .js-hovercard-left');
+    const addedUsernames = Array.from(reviewerElements).map(elem => elem.textContent.trim());
+
+    console.log('Reviewers added:', addedUsernames);
+
+    const missingUsernames = usernames.filter(username => !addedUsernames.includes(username));
+
+    if (missingUsernames.length > 0) {
+      console.error('The following reviewers were not added:', missingUsernames);
+      // Optionally, you can attempt to re-add the missing reviewers
+      // For simplicity, we'll alert the user
+      alert(`Some reviewers were not added: ${missingUsernames.join(', ')}`);
+    } else {
+      console.log('All reviewers have been successfully added.');
+    }
+  }, 250); // Delay of 250ms
 }
 
 function waitForReviewersToLoad(timeout = 10000) {
