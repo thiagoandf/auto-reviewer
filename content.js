@@ -131,7 +131,7 @@ function verifyReviewers(usernames) {
     } else {
       console.log('All reviewers have been successfully added.');
     }
-  }, 250); // Delay of 250ms
+  }, 1000); // Delay of 250ms
 }
 
 function waitForReviewersToLoad(timeout = 10000) {
