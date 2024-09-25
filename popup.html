@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>GitHub PR Reviewer Adder</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 10px;
+        width: 200px;
+      }
+      textarea {
+        width: 100%;
+        height: 100px;
+        box-sizing: border-box;
+      }
+      button {
+        margin-top: 10px;
+        width: 100%;
+      }
+      h3 {
+        margin-top: 0;
+      }
+      #message {
+        color: green;
+        margin-top: 10px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>Reviewers</h3>
+    <p>Enter one GitHub username per line:</p>
+    <textarea id="usernames" placeholder="username1&#10;username2"></textarea>
+    <button id="save">Save</button>
+    <div id="message"></div>
+    <script src="popup.js"></script>
+  </body>
+</html>

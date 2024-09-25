@@ -1,12 +1,17 @@
 {
   "manifest_version": 3,
   "name": "GitHub PR Reviewer Adder",
-  "version": "1.0",
-  "description": "Quickly add predefined reviewers to GitHub PRs using a keyboard shortcut.",
+  "version": "1.1",
+  "description": "Quickly add predefined reviewers to GitHub PRs.",
   "permissions": ["storage", "activeTab", "scripting"],
-  "host_permissions": ["https://github.com/*/*/pull/*"],
+  "host_permissions": [
+    "https://github.com/*/*/pull/*"
+  ],
   "background": {
     "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
   },
   "commands": {
     "add-reviewers": {
@@ -19,7 +24,9 @@
   "options_page": "options.html",
   "content_scripts": [
     {
-      "matches": ["https://github.com/*/*/pull/*"],
+      "matches": [
+        "https://github.com/*/*/pull/*"
+      ],
       "js": ["content.js"]
     }
   ]
