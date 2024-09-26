@@ -5,7 +5,8 @@
   "description": "Quickly add predefined reviewers to GitHub PRs.",
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": [
-    "https://github.com/*/*/pull/*"
+    "https://github.com/*/*/pull/*",
+    "https://git.hubteam.com/*/*/pull/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -17,7 +18,7 @@
   "commands": {
     "add-reviewers": {
       "suggested_key": {
-        "default": "Ctrl+Shift+Y"
+        "default": "Ctrl+Shift+U"
       },
       "description": "Add predefined reviewers to the PR"
     }
@@ -26,7 +27,8 @@
   "content_scripts": [
     {
       "matches": [
-        "https://github.com/*/*/pull/*"
+        "https://github.com/*/*/pull/*",
+        "https://git.hubteam.com/*/*/pull/*"
       ],
       "js": ["content.js"]
     }
