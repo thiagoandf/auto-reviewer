@@ -1,32 +1,33 @@
 document.addEventListener("DOMContentLoaded", () => {
   const usernamesTextarea = document.getElementById("usernames");
   const saveButton = document.getElementById("save");
-  const addReviewersButton = document.getElementById("add-reviewers");
+  const hubspotSuffixCheckbox = document.getElementById("hubspot-suffix");
   const messageDiv = document.getElementById("message");
 
-  // Load saved usernames
-  chrome.storage.sync.get("usernames", ({ usernames }) => {
+  // Load saved settings
+  chrome.storage.sync.get(["usernames", "hubspotSuffix"], ({ usernames, hubspotSuffix }) => {
     if (usernames && usernames.length > 0) {
       usernamesTextarea.value = usernames.join("\n");
     }
+    hubspotSuffixCheckbox.checked = !!hubspotSuffix;
   });
 
-  // Save usernames
+  // Save settings
   saveButton.addEventListener("click", () => {
     const usernames = usernamesTextarea.value
       .split("\n")
       .map((u) => u.trim())
       .filter((u) => u);
 
-    chrome.storage.sync.set({ usernames }, () => {
-      // Display a success message
-      messageDiv.textContent = "Usernames saved.";
+    const hubspotSuffix = hubspotSuffixCheckbox.checked;
+
+    chrome.storage.sync.set({ usernames, hubspotSuffix }, () => {
+      messageDiv.textContent = "Settings saved.";
       messageDiv.style.color = "green";
 
-      // Close the popup after a short delay
       setTimeout(() => {
         window.close();
-      }, 1000); // Delay in milliseconds
+      }, 1000);
     });
   });
 });

@@ -5,16 +5,19 @@ document.getElementById("save").addEventListener("click", () => {
     .map((u) => u.trim())
     .filter((u) => u);
 
-  chrome.storage.sync.set({ usernames }, () => {
-    alert("Usernames saved.");
+  const hubspotSuffix = document.getElementById("hubspot-suffix").checked;
+
+  chrome.storage.sync.set({ usernames, hubspotSuffix }, () => {
+    alert("Settings saved.");
   });
 });
 
-// Load saved usernames on page load
+// Load saved settings on page load
 document.addEventListener("DOMContentLoaded", () => {
-  chrome.storage.sync.get("usernames", ({ usernames }) => {
+  chrome.storage.sync.get(["usernames", "hubspotSuffix"], ({ usernames, hubspotSuffix }) => {
     if (usernames && usernames.length > 0) {
       document.getElementById("usernames").value = usernames.join("\n");
     }
+    document.getElementById("hubspot-suffix").checked = !!hubspotSuffix;
   });
 });

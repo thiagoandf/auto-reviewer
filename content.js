@@ -2,9 +2,13 @@
   // Listen for messages from the background script
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "addReviewers") {
-      chrome.storage.sync.get("usernames", ({ usernames }) => {
+      chrome.storage.sync.get(["usernames", "hubspotSuffix"], ({ usernames, hubspotSuffix }) => {
         if (usernames && usernames.length > 0) {
-          addReviewers(usernames);
+          let effectiveUsernames = usernames;
+          if (hubspotSuffix && window.location.hostname === "github.com") {
+            effectiveUsernames = usernames.map(u => u + "_hubspot");
+          }
+          addReviewers(effectiveUsernames);
         } else {
           console.error("No reviewers found. Please add them in the extension options.");
         }

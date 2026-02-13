@@ -14,12 +14,25 @@
       button {
         margin-top: 10px;
       }
+      .checkbox-row {
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .checkbox-row input[type="checkbox"] {
+        margin: 0;
+      }
     </style>
   </head>
   <body>
     <h1>Configure Reviewers</h1>
     <p>Enter one GitHub username per line:</p>
     <textarea id="usernames" placeholder="username1&#10;username2"></textarea>
+    <label class="checkbox-row">
+      <input type="checkbox" id="hubspot-suffix" />
+      Append <code>_hubspot</code> suffix to usernames on github.com
+    </label>
     <br />
     <button id="save">Save</button>
     <script src="options.js"></script>
