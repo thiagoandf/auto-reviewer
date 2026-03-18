@@ -1,52 +1,30 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>GitHub PR Reviewer Adder</title>
+    <title>Auto-Reviewers</title>
+    <link rel="stylesheet" href="styles.css" />
     <style>
       body {
-        font-family: Arial, sans-serif;
-        margin: 10px;
-        width: 200px;
+        width: 260px;
+        padding: 16px;
       }
       textarea {
-        width: 100%;
         height: 100px;
-        box-sizing: border-box;
-      }
-      button {
-        margin-top: 10px;
-        width: 100%;
-      }
-      h3 {
-        margin-top: 0;
-      }
-      #message {
-        color: green;
-        margin-top: 10px;
-        text-align: center;
-      }
-      .checkbox-row {
-        margin-top: 10px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 13px;
-      }
-      .checkbox-row input[type="checkbox"] {
-        margin: 0;
       }
     </style>
   </head>
   <body>
-    <h3>Reviewers</h3>
-    <p>Enter one GitHub username per line:</p>
-    <textarea id="usernames" placeholder="username1&#10;username2"></textarea>
+    <label class="form-label" for="usernames">Reviewers</label>
+    <p>One GitHub username per line</p>
+    <textarea id="usernames" placeholder="username1&#10;username2" spellcheck="false"></textarea>
     <label class="checkbox-row">
       <input type="checkbox" id="hubspot-suffix" />
       Append <code>_hubspot</code> on github.com
     </label>
-    <button id="save">Save</button>
-    <div id="message"></div>
+    <button class="btn" id="save">Save</button>
+    <div id="message" class="message"></div>
+    <div id="shortcut-hint" class="shortcut-hint"></div>
+    <script src="settings.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

@@ -4,26 +4,50 @@ document.addEventListener("DOMContentLoaded", () => {
   const hubspotSuffixCheckbox = document.getElementById("hubspot-suffix");
   const messageDiv = document.getElementById("message");
 
-  // Load saved settings
-  chrome.storage.sync.get(["usernames", "hubspotSuffix"], ({ usernames, hubspotSuffix }) => {
-    if (usernames && usernames.length > 0) {
+  function showMessage(text, type) {
+    messageDiv.textContent = text;
+    messageDiv.className = "message " + type;
+  }
+
+  loadSettings(({ usernames, hubspotSuffix }) => {
+    if (usernames.length > 0) {
       usernamesTextarea.value = usernames.join("\n");
     }
-    hubspotSuffixCheckbox.checked = !!hubspotSuffix;
+    hubspotSuffixCheckbox.checked = hubspotSuffix;
   });
 
-  // Save settings
+  // Display the current keyboard shortcut
+  const shortcutHint = document.getElementById("shortcut-hint");
+  chrome.commands.getAll((commands) => {
+    const cmd = commands.find((c) => c.name === "add-reviewers");
+    if (cmd && cmd.shortcut) {
+      const keys = cmd.shortcut.split("+").map((k) => k.trim());
+      shortcutHint.innerHTML =
+        "Trigger with " + keys.map((k) => `<kbd>${k}</kbd>`).join(" + ");
+    } else {
+      shortcutHint.innerHTML =
+        'No shortcut set — <a href="chrome://extensions/shortcuts" target="_blank">configure</a>';
+    }
+  });
+
   saveButton.addEventListener("click", () => {
-    const usernames = usernamesTextarea.value
-      .split("\n")
-      .map((u) => u.trim())
-      .filter((u) => u);
+    const usernames = parseUsernames(usernamesTextarea.value);
+
+    if (usernames.length === 0) {
+      showMessage("Please enter at least one username.", "error");
+      return;
+    }
+
+    const { valid, invalid } = validateUsernames(usernames);
+    if (!valid) {
+      showMessage(`Invalid username(s): ${invalid.join(", ")}`, "error");
+      return;
+    }
 
     const hubspotSuffix = hubspotSuffixCheckbox.checked;
 
-    chrome.storage.sync.set({ usernames, hubspotSuffix }, () => {
-      messageDiv.textContent = "Settings saved.";
-      messageDiv.style.color = "green";
+    saveSettings({ usernames, hubspotSuffix }, () => {
+      showMessage("Settings saved.", "success");
 
       setTimeout(() => {
         window.close();
