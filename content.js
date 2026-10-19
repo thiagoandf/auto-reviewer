@@ -89,8 +89,9 @@
     input.value = username;
     input.dispatchEvent(new Event('input', { bubbles: true }));
 
-    // Give GitHub a moment to filter results
-    await sleep(300);
+    try {
+      await waitForReviewerOption(username, 3000);
+    } catch (_) {}
 
     return !!getReviewerOption(username);
   }
@@ -101,10 +102,7 @@
       const option = getReviewerOption(username);
 
       if (option) {
-        const inputElement = option.querySelector('input[type="checkbox"]');
-        const isAlreadySelected = inputElement && inputElement.checked;
-
-        if (!isAlreadySelected) {
+        if (option.getAttribute('aria-checked') !== 'true') {
           option.click();
         } else {
           console.log(`Reviewer "${username}" is already selected.`);
@@ -172,7 +170,7 @@
   }
 
   function getReviewerOption(username) {
-    const options = document.querySelectorAll('label.select-menu-item');
+    const options = document.querySelectorAll('#reviewers-select-menu label.select-menu-item:not([hidden])');
     for (const option of options) {
       const usernameSpan = option.querySelector('.js-username');
       if (usernameSpan && usernameSpan.textContent.trim().toLowerCase() === username.toLowerCase()) {
