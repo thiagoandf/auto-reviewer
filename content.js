@@ -4,7 +4,7 @@
       chrome.storage.sync.get(["usernames", "hubspotSuffix"], ({ usernames, hubspotSuffix }) => {
         if (usernames && usernames.length > 0) {
           let effectiveUsernames = usernames;
-          if (hubspotSuffix && window.location.hostname === "github.com") {
+          if (hubspotSuffix) {
             effectiveUsernames = usernames.map(u => u + "_hubspot");
           }
           addReviewers(effectiveUsernames);
@@ -34,7 +34,7 @@
     }
 
     try {
-      const input = await waitForElement('.js-filterable-field[aria-label="Type or choose a user"]');
+      const input = await waitForElement('#reviewers-select-menu input.js-filterable-field');
 
       const uniqueUsernames = [...new Set(usernames)].filter(Boolean);
 
