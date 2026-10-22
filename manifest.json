@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Auto-Reviewers",
-  "version": "1.4",
+  "version": "1.5",
   "description": "Quickly add predefined reviewers to GitHub PRs.",
   "permissions": ["storage", "activeTab"],
   "host_permissions": [
