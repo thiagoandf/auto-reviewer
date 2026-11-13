@@ -15,66 +15,116 @@
     }
   });
 
+  const legacyLayout = {
+    name: 'legacy',
+    detect: () => !!document.querySelector('#reviewers-select-menu'),
+    inputSelector: '#reviewers-select-menu input.js-filterable-field',
+    isOpen: () => !!document.querySelector('#reviewers-select-menu[open]'),
+    open() {
+      if (!this.isOpen()) {
+        document.querySelector('#reviewers-select-menu summary').click();
+      }
+    },
+    close() {
+      if (this.isOpen()) {
+        document.querySelector('#reviewers-select-menu summary').click();
+      }
+    },
+    getOption(username) {
+      const options = document.querySelectorAll('#reviewers-select-menu label.select-menu-item:not([hidden])');
+      for (const option of options) {
+        const usernameSpan = option.querySelector('.js-username');
+        if (usernameSpan && usernameSpan.textContent.trim().toLowerCase() === username.toLowerCase()) {
+          return option;
+        }
+      }
+      return null;
+    },
+    isSelected: option => option.getAttribute('aria-checked') === 'true',
+    getAssignedReviewers: () =>
+      Array.from(document.querySelectorAll('.js-issue-sidebar-form .css-truncate .js-hovercard-left[data-assignee-name]'))
+        .map(elem => elem.dataset.assigneeName.toLowerCase()),
+  };
+
+  const reactLayout = {
+    name: 'react',
+    detect: () => !!document.querySelector('button[aria-label="Manage reviewers"]'),
+    inputSelector: 'input[aria-label="Filter reviewers"]',
+    isOpen() {
+      return !!document.querySelector(this.inputSelector);
+    },
+    open() {
+      if (!this.isOpen()) {
+        document.querySelector('button[aria-label="Manage reviewers"]').click();
+      }
+    },
+    close() {
+      const input = document.querySelector(this.inputSelector);
+      if (input) {
+        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+      }
+    },
+    getOption(username) {
+      const options = document.querySelectorAll('[role="dialog"] [role="option"][data-id]');
+      for (const option of options) {
+        if (option.dataset.id.toLowerCase() === username.toLowerCase()) {
+          return option;
+        }
+      }
+      return null;
+    },
+    isSelected: option => option.getAttribute('aria-selected') === 'true',
+    getAssignedReviewers: () =>
+      Array.from(document.querySelectorAll('section[aria-label="Reviewers"] a[data-hovercard-type]'))
+        .map(link => link.getAttribute('href').split('/').filter(Boolean).pop().toLowerCase()),
+  };
+
   async function addReviewers(usernames) {
-    if (!document.querySelector('.discussion-timeline-actions')) {
-      console.error("This script should be run on a GitHub Pull Request page.");
+    const layout = [reactLayout, legacyLayout].find(l => l.detect());
+    if (!layout) {
+      console.error("Reviewers menu not found. This script should be run on a GitHub Pull Request page.");
       return;
     }
 
-    const addReviewerButton = document.querySelector('#reviewers-select-menu summary');
-    if (!addReviewerButton) {
-      console.error("Add reviewer button not found.");
-      return;
-    }
-
-    // Only open the dropdown if it isn't already open
-    const menu = document.querySelector('#reviewers-select-menu');
-    if (menu && !menu.hasAttribute('open')) {
-      addReviewerButton.click();
-    }
+    layout.open();
 
     try {
-      const input = await waitForElement('#reviewers-select-menu input.js-filterable-field');
+      const input = await waitForElement(layout.inputSelector);
 
       const uniqueUsernames = [...new Set(usernames)].filter(Boolean);
 
       for (const username of uniqueUsernames) {
-        await addReviewer(username, input);
+        await addReviewer(layout, username, input);
       }
 
-      closeReviewerModal();
+      layout.close();
 
-      await verifyReviewers(uniqueUsernames);
+      await verifyReviewers(layout, uniqueUsernames);
     } catch (error) {
       console.error("Failed to add reviewers:", error.message);
     }
   }
 
-  async function addReviewer(username, input) {
-    // Clear the input field
-    input.value = '';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
+  async function addReviewer(layout, username, input) {
+    setInputValue(input, '');
     await sleep(50);
 
     // Try pasting the full username first
-    if (await tryPasteUsername(username, input)) {
-      await selectReviewerIfReady(username);
+    if (await tryPasteUsername(layout, username, input)) {
+      await selectReviewerIfReady(layout, username);
       return;
     }
 
     // Fallback: type char-by-char, checking for the match after each keystroke
-    input.value = '';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
+    setInputValue(input, '');
     await sleep(50);
 
     for (const char of username) {
-      input.value += char;
-      input.dispatchEvent(new Event('input', { bubbles: true }));
+      setInputValue(input, input.value + char);
 
       // Check immediately if the target reviewer is already visible
-      const option = getReviewerOption(username);
-      if (option) {
-        await selectReviewerIfReady(username);
+      if (layout.getOption(username)) {
+        await selectReviewerIfReady(layout, username);
         return;
       }
 
@@ -82,27 +132,33 @@
     }
 
     // Final attempt after all characters are typed
-    await selectReviewerIfReady(username);
+    await selectReviewerIfReady(layout, username);
   }
 
-  async function tryPasteUsername(username, input) {
-    input.value = username;
+  // Uses the native setter so React-controlled inputs pick up the change
+  function setInputValue(input, value) {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    setter.call(input, value);
     input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  async function tryPasteUsername(layout, username, input) {
+    setInputValue(input, username);
 
     try {
-      await waitForReviewerOption(username, 3000);
+      await waitForReviewerOption(layout, username, 3000);
     } catch (_) {}
 
-    return !!getReviewerOption(username);
+    return !!layout.getOption(username);
   }
 
-  async function selectReviewerIfReady(username) {
+  async function selectReviewerIfReady(layout, username) {
     try {
-      await waitForReviewerOption(username);
-      const option = getReviewerOption(username);
+      await waitForReviewerOption(layout, username);
+      const option = layout.getOption(username);
 
       if (option) {
-        if (option.getAttribute('aria-checked') !== 'true') {
+        if (!layout.isSelected(option)) {
           option.click();
         } else {
           console.log(`Reviewer "${username}" is already selected.`);
@@ -142,15 +198,15 @@
     });
   }
 
-  function waitForReviewerOption(username, timeout = 5000) {
+  function waitForReviewerOption(layout, username, timeout = 5000) {
     return new Promise((resolve, reject) => {
       // Check immediately
-      if (getReviewerOption(username)) {
+      if (layout.getOption(username)) {
         return resolve();
       }
 
       const observer = new MutationObserver(() => {
-        if (getReviewerOption(username)) {
+        if (layout.getOption(username)) {
           observer.disconnect();
           resolve();
         }
@@ -169,41 +225,17 @@
     });
   }
 
-  function getReviewerOption(username) {
-    const options = document.querySelectorAll('#reviewers-select-menu label.select-menu-item:not([hidden])');
-    for (const option of options) {
-      const usernameSpan = option.querySelector('.js-username');
-      if (usernameSpan && usernameSpan.textContent.trim().toLowerCase() === username.toLowerCase()) {
-        return option;
-      }
-    }
-    return null;
-  }
+  async function verifyReviewers(layout, usernames) {
+    const getMissing = () => {
+      const assigned = layout.getAssignedReviewers();
+      return usernames.filter(username => !assigned.includes(username.toLowerCase()));
+    };
 
-  function closeReviewerModal() {
-    const modal = document.querySelector('#reviewers-select-menu[open]');
-    if (modal) {
-      const summary = modal.querySelector('summary');
-      if (summary) {
-        summary.click();
-      }
-    }
-  }
-
-  async function verifyReviewers(usernames) {
-    // Wait for the sidebar to update after closing the modal using MutationObserver
-    const sidebar = document.querySelector('.js-issue-sidebar-form');
-    if (sidebar) {
-      await waitForSidebarUpdate(sidebar);
+    if (getMissing().length > 0) {
+      await waitForSidebarUpdate(() => getMissing().length === 0);
     }
 
-    const reviewerElements = document.querySelectorAll('.js-issue-sidebar-form .css-truncate .js-hovercard-left');
-    const addedUsernames = Array.from(reviewerElements).map(elem => elem.textContent.trim().toLowerCase());
-
-    const missingUsernames = usernames.filter(
-      username => !addedUsernames.includes(username.toLowerCase())
-    );
-
+    const missingUsernames = getMissing();
     if (missingUsernames.length > 0) {
       console.error('The following reviewers were not added:', missingUsernames);
     } else {
@@ -211,20 +243,21 @@
     }
   }
 
-  function waitForSidebarUpdate(sidebar, timeout = 3000) {
+  // Observes the whole body because the React sidebar can be re-mounted after saving
+  function waitForSidebarUpdate(isDone, timeout = 5000) {
     return new Promise((resolve) => {
       const observer = new MutationObserver(() => {
-        observer.disconnect();
-        resolve();
+        if (isDone()) {
+          observer.disconnect();
+          resolve();
+        }
       });
 
-      observer.observe(sidebar, {
+      observer.observe(document.body, {
         childList: true,
         subtree: true,
       });
 
-      // Resolve after timeout even if no mutation is observed,
-      // since the sidebar may already be up to date
       setTimeout(() => {
         observer.disconnect();
         resolve();
